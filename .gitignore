@@ -1,0 +1,8 @@
+.pio/
+.vscode/
+test/
+compile_commands.json
+.cache/
+include/secrets.h
+.clangd
+todo.md
