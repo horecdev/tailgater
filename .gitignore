@@ -6,3 +6,8 @@ compile_commands.json
 include/secrets.h
 .clangd
 todo.md
+GOT-10k/
+GOT10k-Raw/
+GOT-10k-Processed/
+python_ml/__pycache__
+train/
