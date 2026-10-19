@@ -3,7 +3,7 @@ from torch.utils.data import DataLoader
 from pathlib import Path
 import json
 
-from siamfc import SiamFC
+from python_ml.siamfc import SiamFC
 from dataset import SiamFCDataset
 from loss import SiamFCLoss
 
