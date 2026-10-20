@@ -5,7 +5,13 @@
 #include "esp_http_server.h" // lets esp32 act like a mini website (so much bloat omg)
 #include "../include/secrets.h"
 
-// esp32-cam pinout
+// motor driver
+#define LEFT_FWD 12
+#define LEFT_BWD 13
+#define RIGHT_FWD 15
+#define RIGHT_BWD 14
+
+// esp32-cam pinout for server
 #define PWDN_GPIO_NUM     32
 #define RESET_GPIO_NUM    -1
 #define XCLK_GPIO_NUM      0
@@ -27,7 +33,7 @@ httpd_handle_t stream_httpd = NULL;
 
 // fires on GET request from the browser
 // req is ptr to request
-static esp_err_t stream_handler(httpd_req_t *req) {
+static esp_err_t feed_handler(httpd_req_t* req) {
   esp_err_t status = OK;
   char header_buffer[64]; // hold text header from each frame
 
@@ -48,9 +54,9 @@ static esp_err_t stream_handler(httpd_req_t *req) {
     size_t header_len = snprintf(header_buffer, 64, "Content-Type: image/jpeg\r\nContent-Length: %u\r\n\r\n", frame_buffer->len);
 
     // send header -> send image bytes -> boundary
-    status = httpd_resp_send_chunk(req, (const char *)header_buffer, header_len);
+    status = httpd_resp_send_chunk(req, (const char*)header_buffer, header_len);
     if(status == ESP_OK) {
-      status = httpd_resp_send_chunk(req, (const char *)frame_buffer->buf, frame_buffer->len);
+      status = httpd_resp_send_chunk(req, (const char*)frame_buffer->buf, frame_buffer->len);
     }
     if(status == ESP_OK) {
       status = httpd_resp_send_chunk(req, "\r\n--YOUNGMULTI676767\r\n", 22);
@@ -60,19 +66,78 @@ static esp_err_t stream_handler(httpd_req_t *req) {
     esp_camera_fb_return(frame_buffer);
     
     // if sending failed then close the loop.
-    if(status != ESP_OK) {break;}
+    if (status != ESP_OK) {break;}
   }
   
   return status;
 }
 
+// takes a request and sets motors with analog_write
+static esp_err_t steering_handler(httpd_req_t* req) {
+  char buffer[64];
+
+  // save request into buffer
+  if (httpd_req_get_url_query_str(req, buffer, sizeof(buffer)) == ESP_OK) {
+    char value[10]; 
+    
+    // find dir= in query and save parameter into value
+    if (httpd_query_key_value(buffer, "dir", value, sizeof(value)) == ESP_OK) {
+      int speed = 76; // big PWM will beat the shit out of low quality TT motors
+
+      if (strcmp(value, "forward") == 0) {
+        analogWrite(LEFT_FWD, speed);
+        analogWrite(RIGHT_FWD, speed);
+        
+        analogWrite(LEFT_BWD, 0);
+        analogWrite(RIGHT_BWD, 0);
+      }
+      
+      else if (strcmp(value, "backward") == 0) {
+        analogWrite(LEFT_BWD, speed);
+        analogWrite(RIGHT_BWD, speed);
+
+        analogWrite(LEFT_FWD, 0);
+        analogWrite(RIGHT_FWD, 0);
+      }
+      
+      else if (strcmp(value, "left") == 0) {
+        analogWrite(LEFT_BWD, speed);
+        analogWrite(RIGHT_FWD, speed);
+
+        analogWrite(LEFT_FWD, 0);
+        analogWrite(RIGHT_BWD, 0);
+      }
+      
+      else if (strcmp(value, "right") == 0) {
+        analogWrite(LEFT_FWD, speed);
+        analogWrite(RIGHT_BWD, speed);
+
+        analogWrite(LEFT_BWD, 0);
+        analogWrite(RIGHT_FWD, 0);
+      }
+      
+      else if (strcmp(value, "stop") == 0) {
+        analogWrite(LEFT_FWD, 0);
+        analogWrite(LEFT_BWD, 0);
+        analogWrite(RIGHT_FWD, 0);
+        analogWrite(RIGHT_BWD, 0);
+      }
+    }
+  }
+
+  return ESP_OK;
+}
+
 void startCameraServer() {
   httpd_config_t config = HTTPD_DEFAULT_CONFIG(); // load up config for web server
   config.server_port = 80;
-  httpd_uri_t stream_uri = { .uri = "/", .method = HTTP_GET, .handler = stream_handler, .user_ctx = NULL }; // if user uses http_get, run stream_handler function
+  httpd_uri_t feed_uri = { .uri = "/", .method = HTTP_GET, .handler = feed_handler, .user_ctx = NULL }; // if user uses http_get, run stream_handler function
   // so if u put in the IP of esp32 the browser sends GET "/" and starts firing frames in a while (true) loop
+  httpd_uri_t steer_uri  = { .uri = "/control", .method = HTTP_GET, .handler = steering_handler, .user_ctx = NULL }; // if user uses the control/ flag.
+  
   if (httpd_start(&stream_httpd, &config) == ESP_OK) { // boot up the server
-    httpd_register_uri_handler(stream_httpd, &stream_uri); // attach the http_get rule
+    httpd_register_uri_handler(stream_httpd, &feed_uri); // attach the feed rule
+    httpd_register_uri_handler(stream_httpd, &steer_uri); // attach the steering rule
   }
 }
 
