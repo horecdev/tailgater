@@ -6,10 +6,10 @@ from python_ml.siamfc import SiamFC
 import requests
 
 ESP32_IP = "192.168.1.31"
-CONTROL_URL = f"http://{ESP32_IP}/control"
+CONTROL_URL = f"http://{ESP32_IP}:81/control"
 
 current_motor_state = "stop"
-center_tolerance = 40 # 40 px from the center is acceptable
+center_tolerance = 120 # 40 px from the center is acceptable
 
 def set_motor_state(new_state):
     global current_motor_state
@@ -100,7 +100,7 @@ def main():
     
     # without this flag it lags as hell
     print("CONNECTING TO ESP32 SERVER.")
-    camera = cv2.VideoCapture(f"http://{ESP32_IP}/")
+    camera = cv2.VideoCapture(f"http://{ESP32_IP}/?dummy=video.mjpg")
     print("CONNECTED.")
     cv2.namedWindow("Goated Tracker", cv2.WINDOW_NORMAL)
     cv2.setWindowProperty("Goated Tracker", cv2.WND_PROP_FULLSCREEN, cv2.WINDOW_FULLSCREEN)
@@ -175,9 +175,9 @@ def main():
                 error_x = target_x - frame_center
                 
                 if error_x > center_tolerance: # target_x is TOO BIG so its a bit too much to the right
-                    set_motor_state("right")
+                    set_motor_state("left")
                 elif -error_x > center_tolerance:
-                    set_motor_state("left") # invert
+                    set_motor_state("right") # invert
                 else:
                     set_motor_state("forward")
                     

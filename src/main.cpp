@@ -4,16 +4,12 @@
 #include "esp_camera.h"
 #include "esp_http_server.h" // lets esp32 act like a mini website (so much bloat omg)
 #include "../include/secrets.h"
-#include <ESP32Servo.h>
-
-Servo servo;
-const int SERVO_PIN = 2;
 
 // motor driver
-#define LEFT_FWD 12
-#define LEFT_BWD 13
-#define RIGHT_FWD 15
-#define RIGHT_BWD 14
+#define LEFT_FWD 13
+#define LEFT_BWD 12
+#define RIGHT_FWD 14
+#define RIGHT_BWD 15
 
 // esp32-cam pinout for server
 #define PWDN_GPIO_NUM     32
@@ -34,6 +30,7 @@ const int SERVO_PIN = 2;
 #define PCLK_GPIO_NUM     22
 
 httpd_handle_t stream_httpd = NULL;
+httpd_handle_t control_httpd = NULL;
 
 // fires on GET request from the browser
 // req is ptr to request
@@ -46,6 +43,7 @@ static esp_err_t feed_handler(httpd_req_t* req) {
   if (status != ESP_OK) {return status;}
 
   // infinite listening loop
+  status = httpd_resp_send_chunk(req, "\r\n--YOUNGMULTI676767\r\n", 22); // gotta send once first
   while(true) {
     // keep OTA listening so we dont lock ourselves out
     ArduinoOTA.handle(); 
@@ -86,35 +84,36 @@ static esp_err_t steering_handler(httpd_req_t* req) {
     
     // find dir= in query and save parameter into value
     if (httpd_query_key_value(buffer, "dir", value, sizeof(value)) == ESP_OK) {
-      int speed = 76; // big PWM will beat the shit out of low quality TT motors
+      int driving_speed = 50; // big PWM will beat the shit out of low quality TT motors
+      int turning_speed = 55;
 
       if (strcmp(value, "forward") == 0) {
-        analogWrite(LEFT_FWD, speed);
-        analogWrite(RIGHT_FWD, speed);
+        analogWrite(LEFT_FWD, driving_speed);
+        analogWrite(RIGHT_FWD, driving_speed);
         
         analogWrite(LEFT_BWD, 0);
         analogWrite(RIGHT_BWD, 0);
       }
       
       else if (strcmp(value, "backward") == 0) {
-        analogWrite(LEFT_BWD, speed);
-        analogWrite(RIGHT_BWD, speed);
+        analogWrite(LEFT_BWD, driving_speed);
+        analogWrite(RIGHT_BWD, driving_speed);
 
         analogWrite(LEFT_FWD, 0);
         analogWrite(RIGHT_FWD, 0);
       }
       
       else if (strcmp(value, "left") == 0) {
-        analogWrite(LEFT_BWD, speed);
-        analogWrite(RIGHT_FWD, speed);
+        analogWrite(LEFT_BWD, 0);
+        analogWrite(RIGHT_FWD, turning_speed);
 
         analogWrite(LEFT_FWD, 0);
         analogWrite(RIGHT_BWD, 0);
       }
       
       else if (strcmp(value, "right") == 0) {
-        analogWrite(LEFT_FWD, speed);
-        analogWrite(RIGHT_BWD, speed);
+        analogWrite(LEFT_FWD, turning_speed);
+        analogWrite(RIGHT_BWD, 0);
 
         analogWrite(LEFT_BWD, 0);
         analogWrite(RIGHT_FWD, 0);
@@ -135,15 +134,23 @@ static esp_err_t steering_handler(httpd_req_t* req) {
 }
 
 void start_camera_server() {
-  httpd_config_t config = HTTPD_DEFAULT_CONFIG(); // load up config for web server
-  config.server_port = 80;
-  httpd_uri_t feed_uri = { .uri = "/", .method = HTTP_GET, .handler = feed_handler, .user_ctx = NULL }; // if user uses http_get, run stream_handler function
-  // so if u put in the IP of esp32 the browser sends GET "/" and starts firing frames in a while (true) loop
-  httpd_uri_t steer_uri  = { .uri = "/control", .method = HTTP_GET, .handler = steering_handler, .user_ctx = NULL }; // if user uses the control/ flag.
+  // boot feed server on port 80
+  httpd_config_t stream_config = HTTPD_DEFAULT_CONFIG(); 
+  stream_config.server_port = 80;
+  httpd_uri_t feed_uri = { .uri = "/", .method = HTTP_GET, .handler = feed_handler, .user_ctx = NULL }; 
   
-  if (httpd_start(&stream_httpd, &config) == ESP_OK) { // boot up the server
-    httpd_register_uri_handler(stream_httpd, &feed_uri); // attach the feed rule
-    httpd_register_uri_handler(stream_httpd, &steer_uri); // attach the steering rule
+  if (httpd_start(&stream_httpd, &stream_config) == ESP_OK) { 
+    httpd_register_uri_handler(stream_httpd, &feed_uri);  // attach feed uri
+  }
+
+  // boot control server on port 81
+  httpd_config_t control_config = HTTPD_DEFAULT_CONFIG();
+  control_config.server_port = 81;
+  control_config.ctrl_port = 32769; // must be diff from 
+  httpd_uri_t steer_uri = { .uri = "/control", .method = HTTP_GET, .handler = steering_handler, .user_ctx = NULL }; 
+
+  if (httpd_start(&control_httpd, &control_config) == ESP_OK) { 
+    httpd_register_uri_handler(control_httpd, &steer_uri); // attach control uri
   }
 }
 
@@ -160,11 +167,6 @@ void setup() {
   analogWrite(RIGHT_FWD, 0); 
   analogWrite(RIGHT_BWD, 0);
 
-  ESP32PWM::allocateTimer(3);
-  servo.setPeriodHertz(50);
-  servo.attach(SERVO_PIN, 500, 2400);
-  servo.write(0);
-
   // connect to wifi
   WiFi.mode(WIFI_STA);
   WiFi.begin(WIFI_NAME, WIFI_PASS);
@@ -177,13 +179,6 @@ void setup() {
   
   Serial.print("Connected. IP ends with: ");
   Serial.println(last_piece);
-
-  for(int i = 0; i < last_piece; i++) {
-    servo.write(45);
-    delay(150);
-    servo.write(0); 
-    delay(150);
-  }
 
   // initialize OTA
   ArduinoOTA.begin();
@@ -210,7 +205,7 @@ void setup() {
   config.pin_reset = RESET_GPIO_NUM;
   config.xclk_freq_hz = 20000000;
   config.pixel_format = PIXFORMAT_JPEG;
-  config.frame_size = FRAMESIZE_VGA;
+  config.frame_size = FRAMESIZE_QVGA;
   config.jpeg_quality = 12;
   config.fb_count = 1;
 
