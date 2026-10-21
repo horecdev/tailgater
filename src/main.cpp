@@ -4,6 +4,10 @@
 #include "esp_camera.h"
 #include "esp_http_server.h" // lets esp32 act like a mini website (so much bloat omg)
 #include "../include/secrets.h"
+#include <ESP32Servo.h>
+
+Servo servo;
+const int SERVO_PIN = 2;
 
 // motor driver
 #define LEFT_FWD 12
@@ -125,10 +129,12 @@ static esp_err_t steering_handler(httpd_req_t* req) {
     }
   }
 
+  httpd_resp_sendstr(req, "OK");
+
   return ESP_OK;
 }
 
-void startCameraServer() {
+void start_camera_server() {
   httpd_config_t config = HTTPD_DEFAULT_CONFIG(); // load up config for web server
   config.server_port = 80;
   httpd_uri_t feed_uri = { .uri = "/", .method = HTTP_GET, .handler = feed_handler, .user_ctx = NULL }; // if user uses http_get, run stream_handler function
@@ -144,11 +150,39 @@ void startCameraServer() {
 void setup() {
   Serial.begin(115200);
 
+  // init pins and set to low
+  pinMode(LEFT_FWD, OUTPUT); 
+  pinMode(LEFT_BWD, OUTPUT);
+  pinMode(RIGHT_FWD, OUTPUT); 
+  pinMode(RIGHT_BWD, OUTPUT);
+  analogWrite(LEFT_FWD, 0); 
+  analogWrite(LEFT_BWD, 0);
+  analogWrite(RIGHT_FWD, 0); 
+  analogWrite(RIGHT_BWD, 0);
+
+  ESP32PWM::allocateTimer(3);
+  servo.setPeriodHertz(50);
+  servo.attach(SERVO_PIN, 500, 2400);
+  servo.write(0);
+
   // connect to wifi
   WiFi.mode(WIFI_STA);
   WiFi.begin(WIFI_NAME, WIFI_PASS);
   while (WiFi.status() != WL_CONNECTED) {
     delay(500);
+  }
+
+  IPAddress ip = WiFi.localIP();
+  int last_piece = ip[3];
+  
+  Serial.print("Connected. IP ends with: ");
+  Serial.println(last_piece);
+
+  for(int i = 0; i < last_piece; i++) {
+    servo.write(45);
+    delay(150);
+    servo.write(0); 
+    delay(150);
   }
 
   // initialize OTA
@@ -183,7 +217,7 @@ void setup() {
   esp_camera_init(&config);
   
   // launch web server and listen
-  startCameraServer();
+  start_camera_server();
 }
 
 void loop() {
