@@ -7,27 +7,16 @@ import requests
 import time
 import threading
 
+# SERVER STUFF
 ESP32_IP = "192.168.1.31"
 CONTROL_URL = f"http://{ESP32_IP}:81/control"
 http_session = requests.Session()
 
-def _send_command(state):
-    try:
-        http_session.get(f"{CONTROL_URL}?dir={state}", timeout=0.1)
-    except requests.exceptions.RequestException:
-        pass
-
+# MOTOR STATE/CENTERING
 current_motor_state = "stop"
 center_tolerance = 120 # 40 px from the center is acceptable
 
-def set_motor_state(new_state):
-    global current_motor_state
-    if new_state != current_motor_state:
-        current_motor_state = new_state
-        print(f"BOT STATE: {new_state.upper()}")
-        threading.Thread(target=_send_command, args=(new_state,), daemon=True).start()
-            
-
+# TRACKING PARAMS
 mouse_x, mouse_y = 320, 420
 target_x, target_y = 0, 0
 
@@ -36,6 +25,19 @@ target_scale = 1.0
 
 is_tracking = False
 new_target_requested = False
+
+def _send_command(state):
+    try:
+        http_session.get(f"{CONTROL_URL}?dir={state}", timeout=0.1)
+    except requests.exceptions.RequestException:
+        pass
+
+def set_motor_state(new_state):
+    global current_motor_state
+    if new_state != current_motor_state:
+        current_motor_state = new_state
+        print(f"BOT STATE: {new_state.upper()}")
+        threading.Thread(target=_send_command, args=(new_state,), daemon=True).start()
 
 
 def mouse_callback(event, x, y, flags, param):
@@ -104,7 +106,7 @@ def main():
     exemplar_img = None
     
     # without this flag it lags as hell
-    print("CONNECTING TO ESP32 SERVER.")
+    print("CONNECTING TO THE ESP32 SERVER.")
     camera = cv2.VideoCapture(f"http://{ESP32_IP}/?dummy=video.mjpg")
     print("CONNECTED.")
     cv2.namedWindow("Goated Tracker", cv2.WINDOW_NORMAL)

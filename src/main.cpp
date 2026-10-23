@@ -93,10 +93,10 @@ static esp_err_t steering_handler(httpd_req_t* req) {
     // find dir= in query and save parameter into value
     if (httpd_query_key_value(buffer, "dir", value, sizeof(value)) == ESP_OK) {
       int kick_speed = 120; // higher will blow the shit out of cheap TT motors
-      int driving_speed = 65;
-      int outer_turn_speed = 65;
-      int inner_turn_speed = 45;
-      int kickstart_ms = 200;
+      int driving_speed = 55;
+      int outer_turn_speed = 48; 
+      int inner_turn_speed = 40;
+      int kickstart_ms = 30;
 
       if (strcmp(value, "forward") == 0) {
         kickstart({{LEFT_FWD, kick_speed}, {RIGHT_FWD, kick_speed}}, kickstart_ms);
@@ -118,7 +118,7 @@ static esp_err_t steering_handler(httpd_req_t* req) {
       
       else if (strcmp(value, "left") == 0) {
         kickstart({{LEFT_FWD, kick_speed}, {RIGHT_FWD, kick_speed}}, kickstart_ms);
-        analogWrite(LEFT_BWD, inner_turn_speed);
+        analogWrite(LEFT_FWD, inner_turn_speed);
         analogWrite(RIGHT_FWD, outer_turn_speed);
 
         analogWrite(LEFT_FWD, 0);
@@ -128,7 +128,7 @@ static esp_err_t steering_handler(httpd_req_t* req) {
       else if (strcmp(value, "right") == 0) {
         kickstart({{LEFT_FWD, kick_speed}, {RIGHT_FWD, kick_speed}}, kickstart_ms);
         analogWrite(LEFT_FWD, outer_turn_speed);
-        analogWrite(RIGHT_BWD, inner_turn_speed);
+        analogWrite(RIGHT_FWD, inner_turn_speed);
 
         analogWrite(LEFT_BWD, 0);
         analogWrite(RIGHT_FWD, 0);
