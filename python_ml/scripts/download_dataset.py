@@ -1,7 +1,7 @@
 from huggingface_hub import snapshot_download
 import os
 
-download_dir = "../GOT-10k"
+download_dir = "GOT10k-Raw"
 os.makedirs(download_dir, exist_ok=True)
 
 print("Pulling GOT-10k...")

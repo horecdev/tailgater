@@ -100,7 +100,7 @@ def main():
     # set up the model
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     model = SiamFC().to(device)
-    model.load_state_dict(torch.load("train/siamfc_epoch_61.pth", map_location=device, weights_only=True))
+    model.load_state_dict(torch.load("weights/siamfc.pth", map_location=device, weights_only=True))
     model.eval()
     exemplar_tensor = None  # To store our locked target
     exemplar_img = None
@@ -231,8 +231,7 @@ def main():
             else:
                 set_motor_state("stop")
             
-            
-        
+              
     camera.release()
     cv2.destroyAllWindows()
             

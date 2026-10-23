@@ -16,7 +16,7 @@ def train():
     save_dir.mkdir(exist_ok=True)
 
     batch_size = 32
-    epochs = 500
+    epochs = 200
     lr = 1e-3
 
     dataset = SiamFCDataset(processed_dir)

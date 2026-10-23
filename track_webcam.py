@@ -31,6 +31,9 @@ def mouse_callback(event, x, y, flags, param):
             select_scale -= 0.05
         select_scale = max(0.2, min(select_scale, 5.0))
         
+    elif event == cv2.EVENT_RBUTTONDOWN:
+            is_tracking = False
+        
 def get_scaled_crop(frame, c_x, c_y, base_size, scale):
     # crops a region from the frame and pads with gray if out of bounds, then resizes back to base_size for SiamFC
     real_size = int(base_size * scale)
@@ -67,7 +70,7 @@ def main():
     # set up the model
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     model = SiamFC().to(device)
-    model.load_state_dict(torch.load("train/siamfc_epoch_61.pth", map_location=device, weights_only=True))
+    model.load_state_dict(torch.load("weights/siamfc.pth", map_location=device, weights_only=True))
     model.eval()
     exemplar_tensor = None  # To store our locked target
     exemplar_img = None
