@@ -19,11 +19,11 @@ The system is split into two parts:
 - [Training Your Own SiamFC (Optional)](#training-your-own-siamfc-optional)
 
 ## PROJECT SHOWCASE!
-### SiamFC tracking selected objects on my webcam:
-<video src="https://raw.githubusercontent.com/horecdev/tailgater/main/media/webcam_showcase.mp4" controls playsinline></video>
+### SiamFC tracking selected objects on my webcam (click to download .mp4 vid):
+[![Webcam vid](media/webcam_thumb.png)](https://raw.githubusercontent.com/horecdev/tailgater/main/media/webcam_showcase.mp4)
 
-### TAILGATER-1 driving into the selected target:
-<video src="https://raw.githubusercontent.com/horecdev/tailgater/main/media/tailgater_showcase.mp4" controls playsinline></video>
+### TAILGATER-1 driving into the selected target (click to download .mp4 vid):
+[![Tailgater vid](media/tailgater_thumb.png)](https://raw.githubusercontent.com/horecdev/tailgater/main/media/tailgater_showcase.mp4)
 
 ### The Robot Itself
 ![The robot itself](media/tailgater_pic.jpg)
