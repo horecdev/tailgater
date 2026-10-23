@@ -4,9 +4,18 @@ import numpy as np
 import torch.nn.functional as F
 from python_ml.siamfc import SiamFC
 import requests
+import time
+import threading
 
 ESP32_IP = "192.168.1.31"
 CONTROL_URL = f"http://{ESP32_IP}:81/control"
+http_session = requests.Session()
+
+def _send_command(state):
+    try:
+        http_session.get(f"{CONTROL_URL}?dir={state}", timeout=0.1)
+    except requests.exceptions.RequestException:
+        pass
 
 current_motor_state = "stop"
 center_tolerance = 120 # 40 px from the center is acceptable
@@ -14,13 +23,9 @@ center_tolerance = 120 # 40 px from the center is acceptable
 def set_motor_state(new_state):
     global current_motor_state
     if new_state != current_motor_state:
-        try:
-            requests.get(f"{CONTROL_URL}?dir={new_state}", timeout=0.05)
-        except requests.exceptions.RequestException:
-            pass # pass lmao
-        
         current_motor_state = new_state
         print(f"BOT STATE: {new_state.upper()}")
+        threading.Thread(target=_send_command, args=(new_state,), daemon=True).start()
             
 
 mouse_x, mouse_y = 320, 420
@@ -113,6 +118,8 @@ def main():
         if not success:
             break
         
+        frame = cv2.flip(frame, 1) # flip horizontally cuz by default its a mirror image
+
         # copy the frame we will draw on
         display_frame = frame.copy()
         
@@ -175,15 +182,11 @@ def main():
                 error_x = target_x - frame_center
                 
                 if error_x > center_tolerance: # target_x is TOO BIG so its a bit too much to the right
-                    set_motor_state("left")
+                    set_motor_state("right")
                 elif -error_x > center_tolerance:
-                    set_motor_state("right") # invert
+                    set_motor_state("left") # invert
                 else:
                     set_motor_state("forward")
-                    
-        if not is_tracking:
-            set_motor_state("stop")
-                    
                 
                 
         font = cv2.FONT_HERSHEY_DUPLEX
@@ -208,9 +211,23 @@ def main():
         
                 
         cv2.imshow("Goated Tracker", display_frame)
-        if cv2.waitKey(1) & 0xFF == ord('q'):
+        
+        key = cv2.waitKey(1) & 0xFF
+        if key == ord('q'):
             set_motor_state("stop")
             break
+            
+        if not is_tracking:
+            if key == ord('w'):
+                set_motor_state("forward")
+            elif key == ord('s'):
+                set_motor_state("backward")
+            elif key == ord('a'):
+                set_motor_state("left")
+            elif key == ord('d'):
+                set_motor_state("right")
+            else:
+                set_motor_state("stop")
             
             
         

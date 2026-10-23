@@ -1,15 +1,16 @@
 #include <Arduino.h>
 #include <WiFi.h>
 #include <ArduinoOTA.h>
+#include "esp32-hal.h"
 #include "esp_camera.h"
 #include "esp_http_server.h" // lets esp32 act like a mini website (so much bloat omg)
 #include "../include/secrets.h"
 
 // motor driver
-#define LEFT_FWD 13
-#define LEFT_BWD 12
 #define RIGHT_FWD 14
 #define RIGHT_BWD 15
+#define LEFT_FWD 13
+#define LEFT_BWD 12
 
 // esp32-cam pinout for server
 #define PWDN_GPIO_NUM     32
@@ -31,6 +32,13 @@
 
 httpd_handle_t stream_httpd = NULL;
 httpd_handle_t control_httpd = NULL;
+
+void kickstart(const std::vector<std::pair<int, int>>& pin_kick, int delay_ms) {
+  for (auto& [pin, kick] : pin_kick) {
+    analogWrite(pin, kick);
+  }
+  delay(delay_ms);
+}
 
 // fires on GET request from the browser
 // req is ptr to request
@@ -84,10 +92,14 @@ static esp_err_t steering_handler(httpd_req_t* req) {
     
     // find dir= in query and save parameter into value
     if (httpd_query_key_value(buffer, "dir", value, sizeof(value)) == ESP_OK) {
-      int driving_speed = 50; // big PWM will beat the shit out of low quality TT motors
-      int turning_speed = 55;
+      int kick_speed = 120; // higher will blow the shit out of cheap TT motors
+      int driving_speed = 65;
+      int outer_turn_speed = 65;
+      int inner_turn_speed = 45;
+      int kickstart_ms = 200;
 
       if (strcmp(value, "forward") == 0) {
+        kickstart({{LEFT_FWD, kick_speed}, {RIGHT_FWD, kick_speed}}, kickstart_ms);
         analogWrite(LEFT_FWD, driving_speed);
         analogWrite(RIGHT_FWD, driving_speed);
         
@@ -96,6 +108,7 @@ static esp_err_t steering_handler(httpd_req_t* req) {
       }
       
       else if (strcmp(value, "backward") == 0) {
+        kickstart({{LEFT_BWD, kick_speed}, {RIGHT_BWD, kick_speed}}, kickstart_ms);
         analogWrite(LEFT_BWD, driving_speed);
         analogWrite(RIGHT_BWD, driving_speed);
 
@@ -104,16 +117,18 @@ static esp_err_t steering_handler(httpd_req_t* req) {
       }
       
       else if (strcmp(value, "left") == 0) {
-        analogWrite(LEFT_BWD, 0);
-        analogWrite(RIGHT_FWD, turning_speed);
+        kickstart({{LEFT_FWD, kick_speed}, {RIGHT_FWD, kick_speed}}, kickstart_ms);
+        analogWrite(LEFT_BWD, inner_turn_speed);
+        analogWrite(RIGHT_FWD, outer_turn_speed);
 
         analogWrite(LEFT_FWD, 0);
         analogWrite(RIGHT_BWD, 0);
       }
       
       else if (strcmp(value, "right") == 0) {
-        analogWrite(LEFT_FWD, turning_speed);
-        analogWrite(RIGHT_BWD, 0);
+        kickstart({{LEFT_FWD, kick_speed}, {RIGHT_FWD, kick_speed}}, kickstart_ms);
+        analogWrite(LEFT_FWD, outer_turn_speed);
+        analogWrite(RIGHT_BWD, inner_turn_speed);
 
         analogWrite(LEFT_BWD, 0);
         analogWrite(RIGHT_FWD, 0);
@@ -124,6 +139,10 @@ static esp_err_t steering_handler(httpd_req_t* req) {
         analogWrite(LEFT_BWD, 0);
         analogWrite(RIGHT_FWD, 0);
         analogWrite(RIGHT_BWD, 0);
+      }
+
+      else if (strcmp(value, "kickstart") == 0) {
+        kickstart({{LEFT_FWD, kick_speed}, {RIGHT_FWD, kick_speed}}, kickstart_ms);
       }
     }
   }
