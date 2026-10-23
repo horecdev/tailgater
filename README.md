@@ -21,13 +21,13 @@ The system is split into two parts:
 
 ## PROJECT SHOWCASE!
 ### SiamFC tracking selected objects on my webcam:
-![Webcam version tracking my plushie / eyes / fingers](webcam_showcase.mp4)
+![Webcam version tracking my plushie / eyes / fingers](media/webcam_showcase.mp4)
 
 ### TAILGATER-1 driving into the selected target:
-![Robot tailgating a roblox chicken nugget](tailgater_showcase.mp4)
+![Robot tailgating a roblox chicken nugget](media/tailgater_showcase.mp4)
 
 ### The Robot Itself
-![The robot itself](tailgater_pic.jpg)
+![The robot itself](media/tailgater_pic.jpg)
 
 ## Robot Hardware Specs
 The total cost for the robot stays under 30$ (~110-120 PLN), excluding reusable stuff like Li-ion 18650 cells.
