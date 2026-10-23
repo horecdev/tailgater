@@ -20,10 +20,10 @@ The system is split into two parts:
 
 ## PROJECT SHOWCASE!
 ### SiamFC tracking selected objects on my webcam:
-<video src="media/webcam_showcase.mp4" controls="controls" style="max-width: 100%;"></video>
+<video src="https://raw.githubusercontent.com/horecdev/tailgater/main/media/webcam_showcase.mp4" controls playsinline></video>
 
 ### TAILGATER-1 driving into the selected target:
-<video src="media/tailgater_showcase.mp4" controls="controls" style="max-width: 100%;"></video>
+<video src="https://raw.githubusercontent.com/horecdev/tailgater/main/media/tailgater_showcase.mp4" controls playsinline></video>
 
 ### The Robot Itself
 ![The robot itself](media/tailgater_pic.jpg)
