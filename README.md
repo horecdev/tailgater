@@ -11,7 +11,6 @@ The system is split into two parts:
    * `control_tailgater.py`: Calculates target bounding box coordinates, converts them into movement commands (`forward`, `backward`, `left`, `right`, `stop`), and sends them to the robot over Wi-Fi.
 2. **Movement / Hardware (C++):** ESP32 loop (`src/main.cpp`) that receives directional commands from the Python tracker and controls the motors to keep the target centered.
 
-## `README.md` 
 ## Table of Contents
 - [Project Showcase](#project-showcase)
 - [Robot Hardware Specs](#robot-hardware-specs)
@@ -21,10 +20,10 @@ The system is split into two parts:
 
 ## PROJECT SHOWCASE!
 ### SiamFC tracking selected objects on my webcam:
-![Webcam version tracking my plushie / eyes / fingers](media/webcam_showcase.mp4)
+<video src="media/webcam_showcase.mp4" controls="controls" style="max-width: 100%;"></video>
 
 ### TAILGATER-1 driving into the selected target:
-![Robot tailgating a roblox chicken nugget](media/tailgater_showcase.mp4)
+<video src="media/tailgater_showcase.mp4" controls="controls" style="max-width: 100%;"></video>
 
 ### The Robot Itself
 ![The robot itself](media/tailgater_pic.jpg)
